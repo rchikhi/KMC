@@ -21,6 +21,12 @@ Date   : 2023-03-10
 #include "bam_utils.h"
 #include <sys/stat.h>
 
+#include <ncbi-vdb/NGS.hpp>
+#include <ngs/ErrorMsg.hpp>
+#include <ngs/ReadCollection.hpp>
+#include <ngs/ReadIterator.hpp>
+#include <ngs/Read.hpp>
+
 class CBinaryFilesReader
 {
 	bool is_file(const char* path)
@@ -229,6 +235,76 @@ class CBinaryFilesReader
 		bam_task_manager->NotifyBinaryReaderCompleted(id-1);		
 	}
 
+	void ProcessSRA()
+	{
+		std::string file_name;
+		notify_readed(0);
+		while (input_files_queue->pop(file_name))
+		{
+			ngs::ReadCollection run(ncbi::NGS::openReadCollection(file_name));
+			ngs::ReadIterator it(run.getReads(ngs::Read::all));
+
+			uchar *part;
+			pmm_binary_file_reader->reserve(part);
+
+			uint32 id = 0;
+			FilePart file_part = FilePart::Begin;
+			uchar *ptr = part;
+			bool forced_to_finish = false;
+			uint32 filled_part = 0;
+
+			// For every read
+			while (!forced_to_finish && it.nextRead())
+			{
+				// For every fragment in read
+				while (!forced_to_finish && it.nextFragment())
+				{
+					auto fragment_length = it.getFragmentBases().size();
+					// Check if we have enough space in the part to store this
+					// fragment
+					if (part_size - filled_part < 3 + fragment_length)
+					{
+						// Flush the part in rr fashion
+						notify_readed(id);
+						if (!binary_pack_queues[0]->push(part, filled_part, file_part, CompressionType::plain))
+						{
+							forced_to_finish = true;
+							pmm_binary_file_reader->free(part);
+							break;
+						}
+						id = 0;
+						filled_part = 0;
+						file_part = FilePart::Middle;
+						pmm_binary_file_reader->reserve(part);
+						ptr = part;
+					}
+					else
+					{
+						*ptr++ = '>';
+						*ptr++ = '\n';
+						memmove(ptr, it.getFragmentBases().data(), fragment_length);
+						ptr += fragment_length;
+						*ptr++ = '\n';
+						++id;
+						filled_part += 3 + fragment_length;
+					}
+				}
+			}
+
+			if (id && !forced_to_finish)
+			{
+				notify_readed(id);
+				if (!binary_pack_queues[0]->push(part, filled_part, file_part, CompressionType::plain))
+					pmm_binary_file_reader->free(part);
+			}
+		}
+
+		binary_pack_queues[0]->push(nullptr, 0, FilePart::End, CompressionType::plain);
+
+		for (auto &e : binary_pack_queues)
+			e->mark_completed();
+	}
+
 	/*
 	* TODO: for now very simple version, that just reads k-mers from databases and transforms it to pseudoreads
 	* it uses KMC API. Better solution would be to read binary data from kmc pre and suf files and pass it to the reader that would decode 
@@ -407,12 +483,16 @@ public:
 		{
 			ProcessBam();
 			return;
-		}
-		if (input_type == InputType::KMC)
+		} else if (input_type == InputType::KMC)
 		{
 			ProcessKMC();
 			return;
+		} else if (input_type == InputType::SRA)
+		{
+			ProcessSRA();
+			return;
 		}
+
 		std::string file_name;
 		vector<tuple<FILE*, CBinaryPackQueue*, CompressionType>> files;
 		files.reserve(binary_pack_queues.size());

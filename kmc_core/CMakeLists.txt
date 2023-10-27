@@ -44,4 +44,4 @@ add_library(kmc_core STATIC
   kb_storer.cpp kmer.cpp splitter.cpp kb_collector.cpp kmc_runner.cpp
   ${raduls_sources}
 )
-target_link_libraries(kmc_core kmc_api kff_core zlib)
+target_link_libraries(kmc_core ncbi-sdk kmc_api kff_core zlib)

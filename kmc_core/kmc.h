@@ -47,6 +47,8 @@
 #include "critical_error_handler.h"
 #include "exception_aware_thread.h"
 
+#include <ngs/ReadCollection.hpp>
+
 using namespace std;
 
 template <unsigned SIZE> class CKMC {
@@ -244,22 +246,8 @@ template <unsigned SIZE> void CKMC<SIZE>::SetThreads1Stage(const KMC::Stage1Para
 			if (p.size() > 3 && string(p.end() - 3, p.end()) == ".gz")
 				is_gz = true;
 
-			uint64 fsize{};
-			if (Params.file_type != InputType::KMC)
-			{
-				FILE* tmp = my_fopen(p.c_str(), "rb");
-				if (!tmp)
-				{
-					std::ostringstream ostr;
-					ostr << "Error: cannot open file: " << p.c_str();
-					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
-				}
-				my_fseek(tmp, 0, SEEK_END);
-				fsize = my_ftell(tmp);
-				fclose(tmp);
-			}
-			else
-			{
+			uint64 fsize = 0;
+			if (Params.file_type == InputType::KMC) {
 				CKMCFile kmc_file;
 				if (!kmc_file.OpenForListing(p))
 				{
@@ -270,6 +258,20 @@ template <unsigned SIZE> void CKMC<SIZE>::SetThreads1Stage(const KMC::Stage1Para
 				CKMCFileInfo info;
 				kmc_file.Info(info);
 				fsize = info.total_kmers;
+			} else if (Params.file_type == InputType::SRA) {
+				ngs::ReadCollection run(ncbi::NGS::openReadCollection(p));
+				fsize = run.getReadCount();
+			} else {
+				FILE* tmp = my_fopen(p.c_str(), "rb");
+				if (!tmp)
+				{
+					std::ostringstream ostr;
+					ostr << "Error: cannot open file: " << p.c_str();
+					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+				}
+				my_fseek(tmp, 0, SEEK_END);
+				fsize = my_ftell(tmp);
+				fclose(tmp);
 			}
 			file_sizes.push_back(fsize);
 		}
@@ -535,7 +537,10 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 	case InputType::KMC:
 		ostr << "KMC\n";
 		break;
-	}
+	case InputType::SRA:
+		ostr << "SRA\n";
+		break;
+    }
 	ostr << "Output format                : ";
 	switch (Params.output_type)		
 	{
@@ -630,6 +635,9 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsSmallKOpt()
 		break;
 	case InputType::KMC:
 		ostr << "KMC\n";
+		break;
+	case InputType::SRA:
+		ostr << "SRA\n";
 		break;
 	}
 	ostr << "Output format                 : ";

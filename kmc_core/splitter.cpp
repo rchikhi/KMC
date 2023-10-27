@@ -97,8 +97,8 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 	uchar c = 0;
 	uint32 pos = 0;
 
-	if (file_type == InputType::FASTA || file_type == InputType::KMC)
-	{		
+	if (file_type == InputType::FASTA || file_type == InputType::KMC || file_type == InputType::SRA)
+	{
 		if (read_type == ReadType::long_read)
 			return GetSeqLongRead(seq, seq_size, '>');
 		if (curr_read_len == 0)
