@@ -21,6 +21,14 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Add pthreads
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+link_libraries(Threads::Threads)
+
+# Add dl
+link_libraries(dl)
+
 # Options
 option(KMC_BUILD_PYTHON_API "Turn on / off building python API" ON)
 
