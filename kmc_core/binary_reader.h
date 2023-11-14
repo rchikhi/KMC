@@ -307,13 +307,13 @@ class CBinaryFilesReader
 
 	const char* fasterq_dump_cmd = "fasterq-dump --fasta-unsorted --stdout ";
 
-    // unsorted SRA using fasterq-dump
+	// unsorted SRA using fasterq-dump
 	void ProcessSRAU() {
 		std::string file_name;
 		notify_readed(0);
 		while (input_files_queue->pop(file_name))
 		{
-            std::string command = fasterq_dump_cmd + file_name;
+			std::string command = fasterq_dump_cmd + file_name;
 			FILE* pipe = popen(command.c_str(), "r");
 			if (!pipe) {
 				std::cerr << "Error: Could not open pipe for fasterq-dump command." << std::endl;
@@ -330,27 +330,26 @@ class CBinaryFilesReader
 				if (bytesRead == 0) {
 					if (feof(pipe)) {
 						// End of stream.
-			            std::cerr << "eof reached" << std::endl;
-                        if (ferror(pipe)) { std::cerr << "Error: fread failed while reading from pipe (" << ferror(pipe) << ")" << std::endl; }
+						if (ferror(pipe)) { std::cerr << "Error: fread failed while reading from pipe (" << ferror(pipe) << ")" << std::endl; }
 						break;
 					} else {
 						// Handle read error.
 						std::cerr << "Error: fread failed while reading from pipe." << std::endl;
 						forced_to_finish = true;
-				        pmm_binary_file_reader->free(part);
+						pmm_binary_file_reader->free(part);
 						break;
 					}
 				}
 
-			    notify_readed(bytesRead);
-                // Assuming this function processes the FASTA data and pushes it to some queue for further processing
-                // and also handles the memory for 'part' appropriately (frees or reuses it).
-                if (!binary_pack_queues[0]->push(part, bytesRead, file_part, CompressionType::plain)) {
-                    forced_to_finish = true;
-                    pmm_binary_file_reader->free(part);
-                    break;
-                }
-                file_part = FilePart::Middle; // After the first part, all will be middle parts until the end.
+				notify_readed(bytesRead);
+				// Assuming this function processes the FASTA data and pushes it to some queue for further processing
+				// and also handles the memory for 'part' appropriately (frees or reuses it).
+				if (!binary_pack_queues[0]->push(part, bytesRead, file_part, CompressionType::plain)) {
+					forced_to_finish = true;
+					pmm_binary_file_reader->free(part);
+					break;
+				}
+				file_part = FilePart::Middle; // After the first part, all will be middle parts until the end.
 				pmm_binary_file_reader->reserve(part);
 			}
 
@@ -550,7 +549,7 @@ public:
 		{
 			ProcessSRA();
 			return;
-        } else if (input_type == InputType::SRAU)
+		} else if (input_type == InputType::SRAU)
 		{
 			ProcessSRAU();
 			return;
