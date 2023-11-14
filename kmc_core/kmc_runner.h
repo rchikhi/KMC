@@ -92,7 +92,7 @@ namespace KMC
 		void Log(const std::string& msg) override;
 	};
 
-	enum class InputFileType { FASTQ, FASTA, MULTILINE_FASTA, BAM, KMC, SRA };
+	enum class InputFileType { FASTQ, FASTA, MULTILINE_FASTA, BAM, KMC, SRA, SRAU };
 	enum class OutputFileType { KMC, KFF };
 	
 	enum class EstimateHistogramCfg { DONT_ESTIMATE, ESTIMATE_AND_COUNT_KMERS, ONLY_ESTIMATE };

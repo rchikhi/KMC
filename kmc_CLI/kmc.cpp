@@ -166,6 +166,8 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			stage1Params.SetInputFileType(KMC::InputFileType::BAM);
 		else if (strncmp(argv[i], "-fkmc", 5) == 0)
 			stage1Params.SetInputFileType(KMC::InputFileType::KMC);
+		else if (strncmp(argv[i], "-fsrau", 6) == 0) // unsorted SRA using fasterq-dump, should be faster than -fsra
+			stage1Params.SetInputFileType(KMC::InputFileType::SRAU);
 		else if (strncmp(argv[i], "-fsra", 5) == 0)
 			stage1Params.SetInputFileType(KMC::InputFileType::SRA);
 #ifdef DEVELOP_MODE

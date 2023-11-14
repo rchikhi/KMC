@@ -261,7 +261,16 @@ template <unsigned SIZE> void CKMC<SIZE>::SetThreads1Stage(const KMC::Stage1Para
 			} else if (Params.file_type == InputType::SRA) {
 				ngs::ReadCollection run(ncbi::NGS::openReadCollection(p));
 				fsize = run.getReadCount();
+			} else if (Params.file_type == InputType::SRAU) {
+                // use NCBI parser, but see how much time we waste here
+	            CStopWatch timer_readcount;
+            	timer_readcount.startTimer();
+				ngs::ReadCollection run(ncbi::NGS::openReadCollection(p));
+				fsize = run.getReadCount();
+            	timer_readcount.stopTimer();
+                cerr << "[SRA unsorted mode] time to estimate .sra read count: " << timer_readcount.getElapsedTime() << " secs\n";
 			} else {
+
 				FILE* tmp = my_fopen(p.c_str(), "rb");
 				if (!tmp)
 				{
@@ -540,7 +549,11 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 	case InputType::SRA:
 		ostr << "SRA\n";
 		break;
+	case InputType::SRAU:
+		ostr << "SRAU\n";
+		break;
     }
+
 	ostr << "Output format                : ";
 	switch (Params.output_type)		
 	{
@@ -638,6 +651,9 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsSmallKOpt()
 		break;
 	case InputType::SRA:
 		ostr << "SRA\n";
+		break;
+	case InputType::SRAU:
+		ostr << "SRAU\n";
 		break;
 	}
 	ostr << "Output format                 : ";

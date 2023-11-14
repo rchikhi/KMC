@@ -305,6 +305,65 @@ class CBinaryFilesReader
 			e->mark_completed();
 	}
 
+	const char* fasterq_dump_cmd = "fasterq-dump --fasta-unsorted --stdout ";
+
+    // unsorted SRA using fasterq-dump
+	void ProcessSRAU() {
+		std::string file_name;
+		notify_readed(0);
+		while (input_files_queue->pop(file_name))
+		{
+            std::string command = fasterq_dump_cmd + file_name;
+			FILE* pipe = popen(command.c_str(), "r");
+			if (!pipe) {
+				std::cerr << "Error: Could not open pipe for fasterq-dump command." << std::endl;
+				return;
+			}
+
+			uchar* part;
+			pmm_binary_file_reader->reserve(part);
+			bool forced_to_finish = false;
+			FilePart file_part = FilePart::Begin;
+
+			while (!forced_to_finish) {
+				size_t bytesRead = fread(part, 1, part_size, pipe);
+				if (bytesRead == 0) {
+					if (feof(pipe)) {
+						// End of stream.
+			            std::cerr << "eof reached" << std::endl;
+                        if (ferror(pipe)) { std::cerr << "Error: fread failed while reading from pipe (" << ferror(pipe) << ")" << std::endl; }
+						break;
+					} else {
+						// Handle read error.
+						std::cerr << "Error: fread failed while reading from pipe." << std::endl;
+						forced_to_finish = true;
+				        pmm_binary_file_reader->free(part);
+						break;
+					}
+				}
+
+			    notify_readed(bytesRead);
+                // Assuming this function processes the FASTA data and pushes it to some queue for further processing
+                // and also handles the memory for 'part' appropriately (frees or reuses it).
+                if (!binary_pack_queues[0]->push(part, bytesRead, file_part, CompressionType::plain)) {
+                    forced_to_finish = true;
+                    pmm_binary_file_reader->free(part);
+                    break;
+                }
+                file_part = FilePart::Middle; // After the first part, all will be middle parts until the end.
+				pmm_binary_file_reader->reserve(part);
+			}
+
+			pclose(pipe);
+
+			// Notify the task manager that this thread is done processing the SRA data.
+			binary_pack_queues[0]->push(nullptr, 0, FilePart::End, CompressionType::plain);
+			for (auto& e : binary_pack_queues) {
+				e->mark_completed();
+			}
+		}
+	}
+
 	/*
 	* TODO: for now very simple version, that just reads k-mers from databases and transforms it to pseudoreads
 	* it uses KMC API. Better solution would be to read binary data from kmc pre and suf files and pass it to the reader that would decode 
@@ -490,6 +549,10 @@ public:
 		} else if (input_type == InputType::SRA)
 		{
 			ProcessSRA();
+			return;
+        } else if (input_type == InputType::SRAU)
+		{
+			ProcessSRAU();
 			return;
 		}
 
