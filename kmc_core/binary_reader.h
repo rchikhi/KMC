@@ -305,7 +305,7 @@ class CBinaryFilesReader
 			e->mark_completed();
 	}
 
-	const char* fasterq_dump_cmd = "fasterq-dump --fasta-unsorted --stdout ";
+	const char* fasterq_dump_cmd = "fasterq-dump --seq-defline '>' --fasta-unsorted --stdout ";
 
 	// unsorted SRA using fasterq-dump
 	void ProcessSRAU() {
