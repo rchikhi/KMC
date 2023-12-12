@@ -553,17 +553,6 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 		ostr << "SRAU\n";
 		break;
     }
-
-	ostr << "Output format                : ";
-	switch (Params.output_type)		
-	{
-	case OutputType::KFF:
-		ostr << "KFF\n";
-		break;
-	case OutputType::KMC:
-		ostr << "KMC\n";
-		break;	
-	}
 	ostr << "\n";
 	ostr << "k-mer length                 : " << Params.kmer_len << "\n";
 	ostr << "Max. k-mer length            : " << MAX_K << "\n";
@@ -617,6 +606,17 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage2()
 
 	ostr << "Max. mem. for 2nd stage      : " << setw(5) << (Params.max_mem_stage2 / 1000000) << "MB\n";
 	ostr << "\n";
+
+	ostr << "Output format                : ";
+	switch (Params.output_type)		
+	{
+	case OutputType::KFF:
+		ostr << "KFF\n";
+		break;
+	case OutputType::KMC:
+		ostr << "KMC\n";
+		break;	
+	}
 
 	Params.verboseLogger->Log(ostr.str());
 }
