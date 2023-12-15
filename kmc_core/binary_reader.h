@@ -344,6 +344,7 @@ class CBinaryFilesReader
 			pmm_binary_file_reader->reserve(part);
 			bool forced_to_finish = false;
 			FilePart file_part = FilePart::Begin;
+            bool stream_finished = false;
 
 			while (!forced_to_finish) {
 				size_t bytesRead = fread(part, 1, part_size, pipe);
@@ -351,6 +352,7 @@ class CBinaryFilesReader
 					if (feof(pipe)) {
 						// End of stream.
 						if (ferror(pipe)) { std::cerr << "Error: fread failed while reading from pipe (" << ferror(pipe) << ")" << std::endl; }
+                        stream_finished = true;
 						break;
 					} else {
 						// Handle read error.
@@ -373,22 +375,25 @@ class CBinaryFilesReader
 				pmm_binary_file_reader->reserve(part);
 			}
 
-			// Check if the command executed successfully
-			int returnStatus = pclose(pipe);
-			if (WIFEXITED(returnStatus)) {
-				int exitStatus = WEXITSTATUS(returnStatus);
-				if (exitStatus != 0) {
-					std::cerr << "Error: Piped fasterq-dump exited with non-zero status " << exitStatus << std::endl;
+            // Check if the command executed successfully
+            int returnStatus = pclose(pipe);
+            if (!(stream_finished || forced_to_finish ))
+            {
+                if (WIFEXITED(returnStatus)) {
+                    int exitStatus = WEXITSTATUS(returnStatus);
+                    if (exitStatus != 0) {
+                        std::cerr << "Error: Piped fasterq-dump exited with non-zero status " << exitStatus << " timeout was: " << timeoutDuration << " secs" << std::endl;
+                        fflush(stderr);
+                        exit(1);
+                        return;
+                    }
+                } else {
+                    std::cerr << "Error: Piped fasterq-dump execution failed." << std::endl;
                     fflush(stderr);
                     exit(1);
-					return;
-				}
-			} else {
-				std::cerr << "Error: Piped fasterq-dump execution failed." << std::endl;
-                fflush(stderr);
-                exit(1);
-				return;
-			}
+                    return;
+                }
+            }
 
 			// Notify the task manager that this thread is done processing the SRA data.
 			binary_pack_queues[0]->push(nullptr, 0, FilePart::End, CompressionType::plain);
