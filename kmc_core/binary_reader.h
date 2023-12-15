@@ -382,14 +382,14 @@ class CBinaryFilesReader
                 if (WIFEXITED(returnStatus)) {
                     int exitStatus = WEXITSTATUS(returnStatus);
                     if (exitStatus != 0) {
-                        std::cerr << "Error: Piped fasterq-dump exited with non-zero status " << exitStatus << " timeout was: " << timeoutDuration << " secs" << std::endl;
-                        fflush(stderr);
+                        std::cout << "Error: Piped fasterq-dump exited with non-zero status " << exitStatus << " timeout was: " << timeoutDuration << " secs" << std::endl;
+                        fflush(stdout);
                         exit(1);
                         return;
                     }
                 } else {
-                    std::cerr << "Error: Piped fasterq-dump execution failed." << std::endl;
-                    fflush(stderr);
+                    std::cout << "Error: Piped fasterq-dump execution failed." << std::endl;
+                    fflush(stdout);
                     exit(1);
                     return;
                 }
