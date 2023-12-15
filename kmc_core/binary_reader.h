@@ -313,7 +313,27 @@ class CBinaryFilesReader
 		notify_readed(0);
 		while (input_files_queue->pop(file_name))
 		{
-			std::string command = fasterq_dump_cmd + file_name;
+			// Calculate the file size
+			std::ifstream file(file_name, std::ifstream::ate | std::ifstream::binary);
+			if (!file.is_open()) {
+				std::cerr << "Error in ProcessSRAU: Could not open file to calculate size." << std::endl;
+				continue;
+			}
+			size_t fileSize = file.tellg();
+			file.close();
+
+			// Expected transfer rate is 5 MB/second
+			const size_t transferRate = 5 * 1024 * 1024; // 5 MB/second in bytes
+
+			// Calculate the timeout duration in seconds
+			int timeoutDuration = static_cast<int>(std::ceil(static_cast<double>(fileSize) / transferRate));
+
+			// Add some buffer time to the timeout duration, if needed
+			timeoutDuration += 5; // Example: Adding 5 seconds as buffer
+			
+            // Incorporate the timeout command into your existing command
+			std::string command = "timeout " + std::to_string(timeoutDuration) + "s " + fasterq_dump_cmd + file_name;
+
 			FILE* pipe = popen(command.c_str(), "r");
 			if (!pipe) {
 				std::cerr << "Error: Could not open pipe for fasterq-dump command." << std::endl;
@@ -353,7 +373,22 @@ class CBinaryFilesReader
 				pmm_binary_file_reader->reserve(part);
 			}
 
-			pclose(pipe);
+			// Check if the command executed successfully
+			int returnStatus = pclose(pipe);
+			if (WIFEXITED(returnStatus)) {
+				int exitStatus = WEXITSTATUS(returnStatus);
+				if (exitStatus != 0) {
+					std::cerr << "Error: Piped fasterq-dump exited with non-zero status " << exitStatus << std::endl;
+                    fflush(stderr);
+                    exit(1);
+					return;
+				}
+			} else {
+				std::cerr << "Error: Piped fasterq-dump execution failed." << std::endl;
+                fflush(stderr);
+                exit(1);
+				return;
+			}
 
 			// Notify the task manager that this thread is done processing the SRA data.
 			binary_pack_queues[0]->push(nullptr, 0, FilePart::End, CompressionType::plain);
