@@ -1640,6 +1640,8 @@ public:
 		data = get<1>(l.front());
 		size = get<2>(l.front());
 		l.pop_front();
+		if (l.empty())
+			cv_pop.notify_all();
 		return true;
 	}
 
@@ -1703,6 +1705,8 @@ public:
 		data = get<1>(l.front());
 		size = get<2>(l.front());
 		l.pop_front();
+		if (l.empty())
+			cv_pop.notify_all();
 		return true;
 	}
 
@@ -1762,6 +1766,8 @@ public:
 		last_one_in_sub_bin	= get<6>(l.front());
 
 		l.pop_front();
+		if (l.empty())
+			cv_pop.notify_all();
 		return true;
 	}
 	void mark_completed()
@@ -1828,6 +1834,8 @@ public:
 		n_total = get<8>(l.front());
 		last_in_bin = get<9>(l.front());
 		l.pop_front();
+		if (l.empty())
+			cv_pop.notify_all();
 		return true;
 	}
 
@@ -1986,6 +1994,8 @@ public:
 
 		bin_id = l.front();
 		l.pop_front();
+		if (l.empty())
+			cv_pop.notify_all();
 		return true;
 	}
 	void mark_completed()
