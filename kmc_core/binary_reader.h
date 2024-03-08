@@ -323,16 +323,19 @@ class CBinaryFilesReader
 			file.close();
 
 			// Expected transfer rate is 5 MB/second
-			const size_t transferRate = 5 * 1024 * 1024; // 5 MB/second in bytes
+			const uint64_t transferRate = 5LL * 1024 * 1024; // 5 MB/second in bytes
 
 			// Calculate the timeout duration in seconds
 			int timeoutDuration = static_cast<int>(std::ceil(static_cast<double>(fileSize) / transferRate));
 
 			// Add some buffer time to the timeout duration, if needed
 			timeoutDuration += 5; // Example: Adding 5 seconds as buffer
-			
+
             // Incorporate the timeout command into your existing command
 			std::string command = "timeout " + std::to_string(timeoutDuration) + "s " + fasterq_dump_cmd + file_name;
+		
+            // might want to disable timeout altogether because it is too unreliable, e.g. ERR7308776 decompresses slower than 15MB/s even despite de +5secs
+            //std::string command = fasterq_dump_cmd + file_name;
 
 			FILE* pipe = popen(command.c_str(), "r");
 			if (!pipe) {
@@ -377,22 +380,19 @@ class CBinaryFilesReader
 
             // Check if the command executed successfully
             int returnStatus = pclose(pipe);
-            if (!(stream_finished || forced_to_finish ))
-            {
-                if (WIFEXITED(returnStatus)) {
-                    int exitStatus = WEXITSTATUS(returnStatus);
-                    if (exitStatus != 0) {
-                        std::cout << "Error: Piped fasterq-dump exited with non-zero status " << exitStatus << " timeout was: " << timeoutDuration << " secs" << std::endl;
-                        fflush(stdout);
-                        exit(1);
-                        return;
-                    }
-                } else {
-                    std::cout << "Error: Piped fasterq-dump execution failed." << std::endl;
+            if (WIFEXITED(returnStatus)) {
+                int exitStatus = WEXITSTATUS(returnStatus);
+                if (exitStatus != 0) {
+                    std::cout << "Error: Piped fasterq-dump exited with non-zero status " << exitStatus << " timeout was: " << timeoutDuration << " secs" << std::endl;
                     fflush(stdout);
                     exit(1);
                     return;
                 }
+            } else {
+                std::cout << "Error: Piped fasterq-dump execution failed." << std::endl;
+                fflush(stdout);
+                exit(1);
+                return;
             }
 
 			// Notify the task manager that this thread is done processing the SRA data.
