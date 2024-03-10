@@ -332,10 +332,10 @@ class CBinaryFilesReader
 			timeoutDuration += 5; // Example: Adding 5 seconds as buffer
 
             // Incorporate the timeout command into your existing command
-			std::string command = "timeout " + std::to_string(timeoutDuration) + "s " + fasterq_dump_cmd + file_name;
+			//std::string command = "timeout " + std::to_string(timeoutDuration) + "s " + fasterq_dump_cmd + file_name;
 		
             // might want to disable timeout altogether because it is too unreliable, e.g. ERR7308776 decompresses slower than 15MB/s even despite de +5secs
-            //std::string command = fasterq_dump_cmd + file_name;
+            std::string command = fasterq_dump_cmd + file_name;
 
 			FILE* pipe = popen(command.c_str(), "r");
 			if (!pipe) {
