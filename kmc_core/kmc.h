@@ -259,8 +259,12 @@ template <unsigned SIZE> void CKMC<SIZE>::SetThreads1Stage(const KMC::Stage1Para
 				kmc_file.Info(info);
 				fsize = info.total_kmers;
 			} else if (Params.file_type == InputType::SRA) {
-				ngs::ReadCollection run(ncbi::NGS::openReadCollection(p));
-				fsize = run.getReadCount();
+                ngs::ReadCollection run(ncbi::NGS::openReadCollection(p));
+                if (run.getAlignmentCount(ngs::Alignment::primaryAlignment)) {
+                    std::string warn("SRA input file contains aligned sequences, reading will be slow");
+                    stage1Params.GetWarningsLogger()->Log(warn);
+                }
+                fsize = run.getReadCount();
 			} else if (Params.file_type == InputType::SRAU) {
                 // use NCBI parser, but see how much time we waste here
 	            CStopWatch timer_readcount;
@@ -268,7 +272,15 @@ template <unsigned SIZE> void CKMC<SIZE>::SetThreads1Stage(const KMC::Stage1Para
 				ngs::ReadCollection run(ncbi::NGS::openReadCollection(p));
 				fsize = run.getReadCount();
             	timer_readcount.stopTimer();
-                cerr << "[SRA unsorted mode] time to estimate .sra read count: " << timer_readcount.getElapsedTime() << " secs\n";
+                cout << "[SRA unsorted mode] time to estimate .sra read count: " << timer_readcount.getElapsedTime() << " secs\n";
+	            
+                CStopWatch timer_hasaligned;
+            	timer_hasaligned.startTimer();
+                if (run.getAlignmentCount(ngs::Alignment::primaryAlignment)) {
+                    cout << "[SRA unsorted mode] SRA input file contains aligned sequences, reading will be slow\n";
+                }
+            	timer_hasaligned.stopTimer();
+                cout << "[SRA unsorted mode] time to estimate if .sra has aligned reads: " << timer_hasaligned.getElapsedTime() << " secs\n";
 			} else {
 
 				FILE* tmp = my_fopen(p.c_str(), "rb");

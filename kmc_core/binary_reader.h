@@ -241,8 +241,11 @@ class CBinaryFilesReader
 		notify_readed(0);
 		while (input_files_queue->pop(file_name))
 		{
-			ngs::ReadCollection run(ncbi::NGS::openReadCollection(file_name));
-			ngs::ReadIterator it(run.getReads(ngs::Read::all));
+            ngs::ReadCollection run(ncbi::NGS::openReadCollection(file_name));
+            if (run.getAlignmentCount(ngs::Alignment::primaryAlignment)) {
+                fprintf(stderr, "SRA input file contains aligned sequences, reading will be slow");
+            }
+            ngs::ReadIterator it(run.getReads(ngs::Read::all));
 
 			uchar *part;
 			pmm_binary_file_reader->reserve(part);
