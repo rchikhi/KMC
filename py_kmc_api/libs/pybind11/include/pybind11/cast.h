@@ -9,7 +9,7 @@
 */
 
 #pragma once
-
+#include <cstdint>
 #include "pytypes.h"
 #include "detail/typeid.h"
 #include "detail/descr.h"
