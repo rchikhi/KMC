@@ -379,9 +379,9 @@ class CBinaryFilesReader
 			}
 
             // Check if the command executed successfully
+            int returnStatus = pclose(pipe);
             if (!forced_to_finish)
             {
-                int returnStatus = pclose(pipe);
                 if (WIFEXITED(returnStatus)) {
                     int exitStatus = WEXITSTATUS(returnStatus);
                     if (exitStatus != 0) {
