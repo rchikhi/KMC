@@ -308,7 +308,8 @@ class CBinaryFilesReader
 			e->mark_completed();
 	}
 
-	const char* fasterq_dump_cmd = "fasterq-dump --seq-defline '>' --fasta-unsorted --stdout ";
+	const char* fasterq_dump_cmd = "fasterq-dump -e 1 --seq-defline '>' --fasta-unsorted --stdout "; 
+	// brice found that -e 1 is necessary for some datasets (probably those with WGS) otherwise extraction takes > 10x time
 
 	// unsorted SRA using fasterq-dump
 	void ProcessSRAU() {
@@ -337,7 +338,7 @@ class CBinaryFilesReader
             // Incorporate the timeout command into your existing command
 			//std::string command = "timeout " + std::to_string(timeoutDuration) + "s " + fasterq_dump_cmd + file_name;
 		
-            // might want to disable timeout altogether because it is too unreliable, e.g. ERR7308776 decompresses slower than 15MB/s even despite de +5secs
+            // disables timeout altogether because it is too unreliable, e.g. ERR7308776 decompresses slower than 15MB/s even despite de +5secs
             std::string command = fasterq_dump_cmd + file_name;
 
 			FILE* pipe = popen(command.c_str(), "r");
